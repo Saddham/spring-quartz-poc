@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+    <bean id="helloJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="name" value="HelloJob"/>
+        <property name="group" value="GreetingGroup"/>
+        <property name="jobClass" value="com.saddham.spring.quartz.jobbean.HelloJobBean"/>
+        <property name="jobDataMap">
+            <map>
+                <entry key="firstName" value="Saddham"/>
+                <entry key="lastName" value="Pathan"/>
+            </map>
+        </property>
+        <property name="durability" value="true"/>
+        <property name="requestsRecovery" value="true"/>
+    </bean>
+
+    <bean id="holidayCalendar" name="holidayCalendar" class="org.quartz.impl.calendar.HolidayCalendar"/>
+
+    <bean id="holidayCalendar.addExcludedDate" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject"><ref local="holidayCalendar"/></property>
+        <property name="targetMethod"><value>addExcludedDate</value></property>
+        <property name="arguments">
+            <bean name="today" class="java.util.Date"/>
+        </property>
+    </bean>
+
+    <bean id="helloTrigger" class="com.saddham.spring.quartz.triggerbean.PersistableCronTriggerFactoryBean">
+        <property name="name" value="HelloTrigger"/>
+        <property name="group" value="Greeting"/>
+        <property name="jobDetail" ref="helloJobDetail"/>
+        <property name="cronExpression" value="0/5 41 17 * * ?"/>
+        <!--<property name="calendarName" value="holidayCalendarName"/>-->
+    </bean>
+
+    <!--<bean id="quartzProperties" class="java.util.Properties"/>
+    <bean id="hibernateProperties.load" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject"><ref local="quartzProperties"/></property>
+        <property name="targetMethod"><value>putAll</value></property>
+        <property name="arguments">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">5</prop>
+                <prop key="org.quartz.jobStore.class">org.quartz.simpl.RAMJobStore</prop>
+            </props>
+        </property>
+    </bean>-->
+
+    <!--<bean id="quartzConfigLocation" class="org.springframework.core.io.ClassPathResource">
+        <constructor-arg name="path" value="quartz.properties"/>
+    </bean>-->
+
+    <bean id="helloSchedulerListener" class="com.saddham.spring.quartz.listener.HelloSchedulerListener"/>
+    <bean id="helloJobListener" class="com.saddham.spring.quartz.listener.HelloJobListener"/>
+    <bean id="helloTriggerListener" class="com.saddham.spring.quartz.listener.HelloTriggerListener"/>
+
+    <bean id="schedularFactory" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="jobDetails">
+            <list>
+                <ref bean="helloJobDetail"/>
+            </list>
+        </property>
+        <property name="triggers">
+            <list>
+                <ref bean="helloTrigger"/>
+            </list>
+        </property>
+        <property name="calendars">
+            <map>
+                <entry key="holidayCalendarName" value-ref="holidayCalendar"/>
+            </map>
+        </property>
+        <property name="schedulerListeners">
+            <list>
+                <ref bean="helloSchedulerListener"/>
+            </list>
+        </property>
+        <property name="globalJobListeners">
+            <list>
+                <ref bean="helloJobListener"/>
+            </list>
+        </property>
+        <property name="globalTriggerListeners">
+            <list>
+                <ref bean="helloTriggerListener"/>
+            </list>
+        </property>
+
+        <property name="configLocation" value="classpath:quartz.properties"/>
+        <property name="waitForJobsToCompleteOnShutdown" value="true"/>
+
+        <property name="dataSource" ref="dataSource"/>
+        <property name="transactionManager" ref="transactionManager"/>
+
+        <property name="schedulerName" value="HelloQuartzScheduler"/>
+
+        <!-- Will update database cron triggers to what is in this jobs file on each deploy.
+             Replaces all previous trigger and job data that was in the database.  -->
+        <property name="overwriteExistingJobs" value="true"/>
+
+        <property name="autoStartup" value="true"/>
+        <property name="applicationContextSchedulerContextKey" value="applicationContext"/>
+        <!--<property name="quartzProperties" ref="quartzProperties"/>-->
+
+    </bean>
+
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="jdbc:mysql://localhost/quartztest" />
+        <property name="username" value="root" />
+        <property name="password" value="pramati" />
+    </bean>
+
+    <tx:jta-transaction-manager/>
+
+    <!-- Resolves view names to protected .jsp resources within the /WEB-INF/views directory -->
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+</beans>
